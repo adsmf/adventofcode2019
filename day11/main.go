@@ -19,12 +19,105 @@ func part1() int {
 func part2() string {
 	inputString := loadInputString()
 	hull := runPainter(inputString, 1)
-	return hull.print()
+	registration := decodePaint(hull)
+	fmt.Print(hull.print())
+	return registration
+}
+
+func decodePaint(hull shipHull) string {
+	registration := ""
+	for letterNum := 0; letterNum < 6; letterNum++ {
+		letter := getLetter(hull, letterNum)
+		registration += letter.decode()
+	}
+	return registration
+}
+func getLetter(hull shipHull, num int) letter {
+	l := letter{}
+	offset := (5 * num) + 1
+	for x := 0; x < 4; x++ {
+		for y := 0; y < 6; y++ {
+			if hull.painted(x+offset, y) {
+				l.set(x, y, true)
+			}
+		}
+	}
+	return l
+}
+
+type letter boolGrid
+
+func (l letter) set(x, y int, val bool) { boolGrid(l).set(x, y, val) }
+func (l letter) value(x, y int) bool    { return boolGrid(l).value(x, y) }
+
+func (l letter) decode() string {
+	debug := "> "
+	// Handles:
+	//  CEFHKPUZ
+
+	type position struct {
+		x, y int
+	}
+	checkChars := []position{
+		position{0, 0},
+		position{1, 0},
+		position{2, 0},
+		position{3, 0},
+	}
+	for _, pos := range checkChars {
+		if l.value(pos.x, pos.y) {
+			debug += "T"
+		} else {
+			debug += "F"
+		}
+	}
+
+	// if !l.value(0, 0) {
+	// 	// C
+	// 	if l.value(1, 0) {
+	// 		return "C"
+	// 	}
+	// 	return "3"
+	// } else {
+	// 	// P F K H E Z U
+	// 	if l.value(1, 0) {
+	// 		// P F E Z
+	// 		return "1"
+	// 	} else {
+	// 		// K H U
+	// 		if l.value(1, 2) {
+	// 			// K H
+	// 			return "2"
+	// 		} else {
+	// 			return "U"
+	// 		}
+	// 	}
+	// }
+	return debug + "\n"
+}
+
+type boolGrid map[int]map[int]bool
+
+func (bg boolGrid) set(x, y int, value bool) {
+	if bg[x] == nil {
+		bg[x] = map[int]bool{}
+	}
+	bg[x][y] = value
+}
+
+func (bg boolGrid) value(x, y int) bool {
+	if bg == nil {
+		return false
+	}
+	if bg[x] == nil {
+		return false
+	}
+	return bg[x][y]
 }
 
 type shipHull struct {
-	paintColour map[int]map[int]int
-	visited     map[int]map[int]bool
+	paintColour boolGrid
+	visited     boolGrid
 }
 
 func (h *shipHull) print() string {
@@ -33,7 +126,7 @@ func (h *shipHull) print() string {
 	var minY, maxY int
 	for x, cols := range h.paintColour {
 		for y, tile := range cols {
-			if tile > 0 {
+			if tile {
 				if x < minX {
 					minX = x
 				}
@@ -50,8 +143,8 @@ func (h *shipHull) print() string {
 		}
 	}
 	for y := minY; y < maxY+1; y++ {
-		for x := minX + 1; x < maxX+1; x++ {
-			if h.painted(x, y) == 1 {
+		for x := minX; x < maxX+1; x++ {
+			if h.painted(x, y) {
 				printout += fmt.Sprint("#")
 			} else {
 				printout += fmt.Sprint(".")
@@ -64,33 +157,21 @@ func (h *shipHull) print() string {
 
 func (h *shipHull) visit(x, y int) {
 	if h.visited == nil {
-		h.visited = map[int]map[int]bool{}
+		h.visited = boolGrid{}
 	}
-	if h.visited[x] == nil {
-		h.visited[x] = map[int]bool{}
-	}
-	h.visited[x][y] = true
+	h.visited.set(x, y, true)
 }
 
-func (h *shipHull) paint(x, y, colour int) {
+func (h *shipHull) paint(x, y int, colour bool) {
 	h.visit(x, y)
 	if h.paintColour == nil {
-		h.paintColour = map[int]map[int]int{}
+		h.paintColour = boolGrid{}
 	}
-	if h.paintColour[x] == nil {
-		h.paintColour[x] = map[int]int{}
-	}
-	h.paintColour[x][y] = colour
+	h.paintColour.set(x, y, colour)
 }
 
-func (h *shipHull) painted(x, y int) int {
-	if h.paintColour == nil {
-		return 0
-	}
-	if h.paintColour[x] == nil {
-		return 0
-	}
-	return h.paintColour[x][y]
+func (h *shipHull) painted(x, y int) bool {
+	return h.paintColour.value(x, y)
 }
 
 func (h *shipHull) countVisited() int {
@@ -161,7 +242,11 @@ func runPainter(program string, startingPanel int64) shipHull {
 		for op := range output {
 			if nextInstructionIsPaint {
 				// We're painting
-				hull.paint(robo.x, robo.y, int(op))
+				if op == 1 {
+					hull.paint(robo.x, robo.y, true)
+				} else {
+					hull.paint(robo.x, robo.y, false)
+				}
 			} else {
 				// We're moving
 				if op == 1 {
@@ -170,7 +255,11 @@ func runPainter(program string, startingPanel int64) shipHull {
 					robo.turnLeft()
 				}
 				robo.move()
-				input <- int64(hull.painted(robo.x, robo.y))
+				if hull.painted(robo.x, robo.y) {
+					input <- 1
+				} else {
+					input <- 0
+				}
 			}
 			nextInstructionIsPaint = !nextInstructionIsPaint
 		}
