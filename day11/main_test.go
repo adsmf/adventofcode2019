@@ -9,14 +9,22 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPart2Examples(t *testing.T) {
-	tests := map[string]string{
+func userResults() map[string]string {
+	return map[string]string{
 		"amf":      "PFKHECZU",
 		"amk":      "BCKFPCRA",
 		"asm":      "BLULZJLZ",
 		"dnwe":     "JHARBGCU",
 		"hindessm": "RPJCFZKF",
+		"bracken":  "JFBERBUH",
 	}
+}
+
+func TestPart2Examples(t *testing.T) {
+	tests := userResults()
+
+	// ABCEFGHJKLPRUZ
+	// DIMNOQSTVWXY
 
 	for input, result := range tests {
 		t.Run(fmt.Sprintf("Decode %s", input), func(t *testing.T) {
@@ -38,13 +46,7 @@ func ExampleMain() {
 	main()
 	//Output:
 	// Part 1: 1930
-	// Part 2:
-	// .###..####.#..#.#..#.####..##..####.#..#
-	// .#..#.#....#.#..#..#.#....#..#....#.#..#
-	// .#..#.###..##...####.###..#......#..#..#
-	// .###..#....#.#..#..#.#....#.....#...#..#
-	// .#....#....#.#..#..#.#....#..#.#....#..#
-	// .#....#....#..#.#..#.####..##..####..##.
+	// Part 2: PFKHECZU
 }
 
 func BenchmarkPart1(b *testing.B) {

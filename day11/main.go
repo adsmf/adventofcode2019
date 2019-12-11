@@ -7,7 +7,7 @@ import (
 
 func main() {
 	fmt.Printf("Part 1: %d\n", part1())
-	fmt.Printf("Part 2:\n%s\n", part2())
+	fmt.Printf("Part 2: %s\n", part2())
 }
 
 func part1() int {
@@ -19,7 +19,7 @@ func part1() int {
 func part2() string {
 	inputString := loadInputString()
 	hull := runPainter(inputString, 1)
-	return hull.print()
+	return hull.decode()
 }
 
 type point struct {
@@ -30,6 +30,7 @@ type boolGrid map[point]bool
 type shipHull struct {
 	paintColour boolGrid
 	visited     boolGrid
+	min, max    point
 }
 
 func (h *shipHull) decode() string {
@@ -38,35 +39,35 @@ func (h *shipHull) decode() string {
 
 func (h *shipHull) print() string {
 	printout := ""
-	var minX, maxX int
-	var minY, maxY int
-	for point, tile := range h.paintColour {
-		if tile {
-			if point.x < minX {
-				minX = point.x
-			}
-			if point.x > maxX {
-				maxX = point.x
-			}
-			if point.y < minY {
-				minY = point.y
-			}
-			if point.y > maxY {
-				maxY = point.y
-			}
-		}
-	}
-	for y := minY; y < maxY+1; y++ {
-		for x := minX; x < maxX+1; x++ {
+	for y := h.min.y; y < h.max.y+1; y++ {
+		for x := h.min.x; x < h.max.x+1; x++ {
 			if h.paintColour[point{x, y}] {
-				printout += fmt.Sprint("#")
+				printout += fmt.Sprint("█")
 			} else {
-				printout += fmt.Sprint(".")
+				printout += fmt.Sprint(" ")
 			}
 		}
 		printout += fmt.Sprintln()
 	}
 	return printout
+}
+
+func (h *shipHull) paint(pos point, colour bool) {
+	h.visited[pos] = true
+	h.paintColour[pos] = colour
+
+	if pos.x < h.min.x {
+		h.min.x = pos.x
+	}
+	if pos.y < h.min.y {
+		h.min.y = pos.y
+	}
+	if pos.x > h.max.x {
+		h.max.x = pos.x
+	}
+	if pos.y > h.max.y {
+		h.max.y = pos.y
+	}
 }
 
 type robot struct {
@@ -128,11 +129,10 @@ func runPainter(program string, startingPanel int64) shipHull {
 		for op := range output {
 			if nextInstructionIsPaint {
 				// We're painting
-				hull.visited[robo.pos] = true
 				if op == 1 {
-					hull.paintColour[robo.pos] = true
+					hull.paint(robo.pos, true)
 				} else {
-					hull.paintColour[robo.pos] = false
+					hull.paint(robo.pos, false)
 				}
 			} else {
 				// We're moving
