@@ -17,6 +17,7 @@ func userResults() map[string]string {
 		"dnwe":     "JHARBGCU",
 		"hindessm": "RPJCFZKF",
 		"bracken":  "JFBERBUH",
+		"stmassey": "JHARBGCU",
 	}
 }
 
