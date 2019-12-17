@@ -115,6 +115,19 @@ type scaffold struct {
 func (s *scaffold) generateCommands(route string) []string {
 	cmds := []string{}
 
+	type pair struct {
+		dir string
+		len string
+	}
+
+	pairs := []pair{}
+	parts := strings.Split(route, ",")
+	for _ := range pairs {
+
+	}
+	mainloop := ""
+	functions := map[string]string{}
+
 	cmds = append(cmds, "n\n")
 	return cmds
 }
