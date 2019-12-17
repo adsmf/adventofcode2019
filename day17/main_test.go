@@ -33,8 +33,10 @@ func TestAnswers(t *testing.T) {
 func ExampleMain() {
 	main()
 	//Output:
-	//Part 1: 4372
-	//Part 2: 945911
+	// Part 1: 4372
+	// Route: L,8,R,12,R,12,R,10,R,10,R,12,R,10,L,8,R,12,R,12,R,10,R,10,R,12,R,10,L,10,R,10,L,6,L,10,R,10,L,6,R,10,R,12,R,10,L,8,R,12,R,12,R,10,R,10,R,12,R,10,L,10,R,10,L,6
+	// Commands: []string{"A,B,A,B,C,C,B,A,B,C\n", "L,8,R,12,R,12,R,10\n", "R,10,R,12,R,10\n", "L,10,R,10,L,6\n", "n\n"}
+	// Part 2: 945911
 }
 
 func BenchmarkPart1(b *testing.B) {

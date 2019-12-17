@@ -21,18 +21,24 @@ func part1() int {
 func part2() int {
 	s := readCamera()
 	route := s.generateRoute()
-	fmt.Printf("Route: %s", route)
-	return 0
+	commands := s.generateCommands(route)
+	fmt.Printf("Route: %s\n", route)
+	fmt.Printf("Commands: %#v\n", commands)
+	return testDustCount(commands)
 }
 
-func part2manual() int {
-	cmds := []string{
+func part2manualCommands() []string {
+	return []string{
 		"A,B,A,B,C,C,B,A,B,C\n",
 		"L,8,R,12,R,12,R,10\n",
 		"R,10,R,12,R,10\n",
 		"L,10,R,10,L,6\n",
 		"n\n",
 	}
+}
+
+func part2manual() int {
+	cmds := part2manualCommands()
 	return testDustCount(cmds)
 }
 
@@ -81,6 +87,17 @@ func (f facing) forward() vector {
 	}
 	return vector{}
 }
+func (f facing) left() facing {
+	newFacing := f - 1
+	if newFacing < 0 {
+		newFacing += 4
+	}
+	return newFacing
+}
+func (f facing) right() facing {
+	newFacing := (f + 1) % 4
+	return newFacing
+}
 
 // func (f facing) right() vector {}
 
@@ -95,9 +112,49 @@ type scaffold struct {
 	facing         facing
 }
 
+func (s *scaffold) generateCommands(route string) []string {
+	cmds := []string{}
+
+	cmds = append(cmds, "n\n")
+	return cmds
+}
+
 func (s *scaffold) generateRoute() string {
 	route := ""
-	return route
+	count := 0
+	pos := s.start
+	dir := s.facing
+
+	for {
+		// fmt.Printf("Pos: %v\n", pos)
+		fwdPos := pos.add(dir.forward())
+		if _, found := s.grid[fwdPos]; found {
+			count++
+			pos = fwdPos
+		} else {
+			if count > 0 {
+				route += fmt.Sprintf("%d,", count)
+				count = 0
+			}
+			altFound := false
+			leftPos := pos.add(dir.left().forward())
+			if _, found := s.grid[leftPos]; found {
+				route += "L,"
+				dir = dir.left()
+				altFound = true
+			}
+			rightPos := pos.add(dir.right().forward())
+			if _, found := s.grid[rightPos]; found {
+				route += "R,"
+				dir = dir.right()
+				altFound = true
+			}
+			if !altFound {
+				break
+			}
+		}
+	}
+	return strings.Trim(route, ",")
 }
 
 func (s *scaffold) driver() (int, bool) {
@@ -144,9 +201,14 @@ func (s *scaffold) processCamera() {
 	lines := strings.Split(s.cameraViewRaw, "\n")
 	for y, line := range lines {
 		for x, inp := range line {
+			pos := point{x, y}
 			switch inp {
 			case '#':
-				s.grid[point{x, y}] = scaffoldTile{}
+				s.grid[pos] = scaffoldTile{}
+			case '^':
+				s.grid[pos] = scaffoldTile{}
+				s.start = pos
+				s.facing = facingUp
 			}
 		}
 	}
