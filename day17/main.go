@@ -19,6 +19,13 @@ func part1() int {
 }
 
 func part2() int {
+	s := readCamera()
+	route := s.generateRoute()
+	fmt.Printf("Route: %s", route)
+	return 0
+}
+
+func part2manual() int {
 	cmds := []string{
 		"A,B,A,B,C,C,B,A,B,C\n",
 		"L,8,R,12,R,12,R,10\n",
@@ -52,6 +59,31 @@ func readCamera() scaffold {
 	return s
 }
 
+type facing int
+
+const (
+	facingUp facing = iota
+	facingRight
+	facingDown
+	facingLeft
+)
+
+func (f facing) forward() vector {
+	switch f {
+	case facingUp:
+		return vector{0, -1}
+	case facingDown:
+		return vector{0, 1}
+	case facingLeft:
+		return vector{-1, 0}
+	case facingRight:
+		return vector{1, 0}
+	}
+	return vector{}
+}
+
+// func (f facing) right() vector {}
+
 type scaffold struct {
 	cameraViewRaw  string
 	grid           map[point]scaffoldTile
@@ -59,6 +91,13 @@ type scaffold struct {
 	commands       []string
 	currentCommand string
 	collected      int
+	start          point
+	facing         facing
+}
+
+func (s *scaffold) generateRoute() string {
+	route := ""
+	return route
 }
 
 func (s *scaffold) driver() (int, bool) {
@@ -123,6 +162,17 @@ func (s *scaffold) processCamera() {
 }
 
 type point struct {
+	x, y int
+}
+
+func (p point) add(v vector) point {
+	return point{
+		x: p.x + v.x,
+		y: p.y + v.y,
+	}
+}
+
+type vector struct {
 	x, y int
 }
 
