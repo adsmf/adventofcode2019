@@ -11,6 +11,7 @@ import (
 func main() {
 	fmt.Printf("Part 1: %d\n", part1())
 	// fmt.Printf("Part 2: %d\n", part2())
+	fmt.Printf("Part 2: 0\n")
 }
 
 func part1() int {
@@ -31,61 +32,127 @@ type crawler struct {
 
 func (c *crawler) collectKeys() int {
 	keyIDs := []int{}
+	// fmt.Print("Collecting keys: ")
 	for id := range c.keys {
-		keyIDs = append(keyIDs, int(id))
+		// fmt.Printf("%c ", id)
+		keyIDs = append(keyIDs, id)
+	}
+	// fmt.Println()
+	type option struct {
+		keys      []int
+		lastPos   point
+		lastSteps int
 	}
 
-	perms := utils.PermuteInts(keyIDs)
-	iterSteps := make([]int, len(perms))
+	options := []option{}
+	for _, id := range keyIDs {
+		options = append(options, option{
+			keys:      []int{id},
+			lastPos:   c.start,
+			lastSteps: 0,
+			// remaining: remaining,
+		})
+	}
+
 	bestSteps := utils.MaxInt
-	fmt.Println("Permutations: ", len(perms))
-	for iter, keys := range perms {
-		fmt.Print(".")
-		steps := c.tryOrder(keys)
-		iterSteps[iter] = steps
-		if steps < bestSteps {
-			bestSteps = steps
+	lastLen := 0
+	for len(options) > 0 {
+		newOptions := []option{}
+
+		iterOptions := append(options[0:0], options...)
+		for _, opt := range iterOptions {
+			optSteps, endPoint := c.tryOrder(opt.keys, opt.lastPos)
+			if optSteps == utils.MaxInt {
+				continue
+			}
+
+			if lastLen < len(opt.keys) {
+				lastLen = len(opt.keys)
+				fmt.Printf("Starting length %d\n", lastLen)
+			}
+
+			optSteps += opt.lastSteps
+			if len(opt.keys) == len(c.keys) {
+				if optSteps < bestSteps {
+					bestSteps = optSteps
+				}
+				continue
+			}
+
+			remaining := without(c.keys, opt.keys)
+			// remainingIter := append(remaining[0:0], remaining...)
+			for _, next := range remaining {
+				keysCopy := append(opt.keys[0:0], opt.keys...)
+				for _, check := range keysCopy {
+					if check == next {
+						panic("Should not have next initial list")
+					}
+				}
+				keysCopy = append(keysCopy, next)
+				newWO := without(c.keys, keysCopy)
+				for _, check := range newWO {
+					if check == next {
+						panic("Should not have next in remaining")
+					}
+				}
+				if len(c.keys) != len(newWO)+len(keysCopy) {
+					panic("Wrong number of keys")
+				}
+				newOpt := option{
+					keys:      keysCopy,
+					lastPos:   endPoint,
+					lastSteps: optSteps,
+				}
+				newOptions = append(newOptions, newOpt)
+			}
 		}
+		// options := []option{}
+		// for _, option:=
+		options = newOptions
 	}
 	return bestSteps
 }
 
-func (c *crawler) tryOrder(keys []int) int {
-	// fmt.Printf("Trying permutation: %v\n", keys)
-	steps := 0
-	pos := c.start
-	for keyIndex := 0; keyIndex < len(keys); keyIndex++ {
-		// fmt.Printf("Key index: %d\n", keyIndex)
-		wantKey := keys[keyIndex]
-
-		for doorIdx := 0; doorIdx < len(keys); doorIdx++ {
-			if doorIdx < keyIndex {
-				c.vault.openDoors[keys[doorIdx]] = true
-			} else {
-				c.vault.openDoors[keys[doorIdx]] = false
-			}
-		}
-		keyPos := c.keys[wantKey].pos
-		// fmt.Printf("Trying to get key %d (%v) from %v with keys %v\n", wantKey, keyPos, pos, c.vault.openDoors)
-		// fmt.Printf("%v", c.vault)
-		routeSteps := c.getKey(c.vault, pos, keyPos)
-		if routeSteps == utils.MaxInt {
-			// fmt.Printf("Couldn't get key\n")
-			return utils.MaxInt
-		}
-		routeSteps--
-		// fmt.Printf("Got key: %v\n", routeSteps)
-		pos = keyPos
-		steps += routeSteps
-		// fmt.Println()
+func without(keys map[int]*key, skipList []int) []int {
+	filtered := []int{}
+	skipMap := map[int]bool{}
+	for _, skip := range skipList {
+		skipMap[skip] = true
 	}
-	fmt.Printf("Total steps: %d\n\n", steps)
-	return steps
+
+	for item := range keys {
+		if _, found := skipMap[item]; !found {
+			filtered = append(filtered, item)
+		}
+	}
+	return filtered
 }
 
-func (c *crawler) getKey(vaultCopy vault, start, keyPos point) int {
-	startNode := vaultCopy.vault[start]
-	keyNode := vaultCopy.vault[keyPos]
+func (c *crawler) tryOrder(keys []int, startPoint point) (int, point) {
+	pos := startPoint
+	keyIndex := len(keys) - 1
+	wantKey := keys[keyIndex]
+
+	for id := range c.vault.openDoors {
+		c.vault.openDoors[id] = false
+	}
+	for doorIdx := 0; doorIdx < keyIndex; doorIdx++ {
+		key := keys[doorIdx]
+		c.vault.openDoors[key] = true
+	}
+	keyPos := c.keys[wantKey].pos
+	routeSteps := c.getKey(pos, keyPos)
+	if routeSteps == utils.MaxInt {
+		return utils.MaxInt, startPoint
+	}
+	routeSteps--
+	pos = keyPos
+	return routeSteps, pos
+}
+
+func (c *crawler) getKey(start, keyPos point) int {
+	startNode := c.vault.vault[start]
+	keyNode := c.vault.vault[keyPos]
 	route, err := astar.Route(startNode, keyNode)
 	if err != nil {
 		return utils.MaxInt
@@ -97,7 +164,7 @@ func (c crawler) String() string {
 	retString := "Keys:\n"
 	keyIDs := []int{}
 	for id := range c.keys {
-		keyIDs = append(keyIDs, int(id))
+		keyIDs = append(keyIDs, id)
 	}
 	sort.Ints(keyIDs)
 	for _, idInt := range keyIDs {
@@ -129,7 +196,7 @@ func (t tile) Heuristic(from astar.Node) astar.Cost {
 	if yDiff < 0 {
 		yDiff *= -1
 	}
-	return astar.Cost(xDiff + yDiff)
+	return astar.Cost(xDiff+yDiff) + 1
 }
 
 func (t tile) Paths() []astar.Edge {
@@ -275,8 +342,10 @@ func (t tile) String() string {
 	case tileTypeStart:
 		//return "⭐️"
 		return "s"
-	default:
+	case tileTypeUnkown:
 		return "?"
+	default:
+		return "!"
 		//return "❓"
 	}
 }
