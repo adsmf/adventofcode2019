@@ -14,6 +14,14 @@ func TestPart1Examples(t *testing.T) {
 	}
 	tests := []testDef{
 		testDef{
+			"amf1.txt",
+			2,
+		},
+		testDef{
+			"amf2.txt",
+			8,
+		},
+		testDef{
 			file:  "p1ex1.txt",
 			steps: 86,
 		},
@@ -33,7 +41,7 @@ func TestPart2Examples(t *testing.T) {
 }
 
 func TestAnswers(t *testing.T) {
-	// assert.Equal(t, 0, part1())
+	assert.Equal(t, 0, part1())
 	// assert.Equal(t, 0, part2())
 }
 
